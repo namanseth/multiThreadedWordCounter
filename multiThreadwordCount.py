@@ -2,7 +2,7 @@ import math
 import argparse
 import string
 import os
-from multiprocessing import Process, Lock
+from multiprocessing import Process
 
 global wordMap 
 wordMap = {}
@@ -22,18 +22,23 @@ def main():
 	inputFile = arguments['inputFile']
 	outputFile = arguments['outputFile']
 
-	splitFile(inputFile)
+	tIDs = [0, 1, 2, 3]
 
-	diskLock = Lock()
+	splitFile(inputFile)
 
 	print "hi."
 
-	process1 = Process(target=worker, args=('partaa', root, diskLock))
-	#process2 = Process(target=worker, args=('partab', root, diskLock))
-	#process3 = Process(target=worker, args=('partac', root, diskLock))
+	#thread1 = thread.start_new_thread(worker, ('partaa', root, tIDs[0]))
+	#thread2 = thread.start_new_thread(worker, ('partab', root, tIDs[1]))
+	#thread3 = thread.start_new_thread(worker, ('partac', root, tIDs[2]))
+	#thread4 = thread.start_new_thread(worker, ('partad', root, tIDs[3]))
+	
+	process1 = Process(target=worker, args=('partaa', root, tIDs[0]))
+	process2 = Process(target=worker, args=('partab', root, tIDs[1]))
+	process3 = Process(target=worker, args=('partac', root, tIDs[2]))
 	#process4 = Process(target=worker, args=('partad', root, diskLock))
 
-	totalProcesses = [process1]#, process2, process3, process3]
+	totalProcesses = [process1, process2, process3]#, thread4]
 
 	for process in totalProcesses:
 		process.start()
@@ -48,20 +53,24 @@ def main():
 
 	print "Counting done."
 
-def worker(chunkPath, root, diskLock):
+def worker(chunkPath, root, tID):
 	#wordMap = {}
+	print "ThreadID: " + str(tID)
+	count = 0
 	with open(chunkPath, 'r') as chunk:
 		for line in chunk:
 			line = line.strip()
 			line = line.translate(string.maketrans("",""), string.punctuation)
 			words = line.split()
 			for word in words:
+				count += 1
 				wordMap[word] = 1
-
-	diskLock.acquire()
-	writeToDisk(root)
-	diskLock.release()
-
+	print "hello1"
+	print "Hello2"
+	print wordMap
+	#if(count >5):
+	writeToDisk(root, tID)
+		
 def finalCount(root, result):
 	for rootPath, dirs, files in os.walk(root):
 		for fileName in files:
@@ -93,12 +102,15 @@ def splitFile(inputFile):
 	chunkSize = int(math.ceil(numberOfLines/4.0))
 	os.system('split -l '+ str(chunkSize) + ' ' + inputFile + ' part')
 
-def writeToDisk(root):
-	finalFile = open(root + '/end', 'a')
-	if not os.path.exists(finalFile):
-		os.makedirs(fileName)
+def writeToDisk(root, tID):
+	print "YO"
+	filePath = root + '/results'
+	if not os.path.exists(filePath):
+		os.makedirs(root + '/results')
+	print "FILE"
+	finalFile = open("results" + str(tID) + ".txt", 'a')
 	for key in wordMap:
-		finalFile.write(key + ":" + wordMap.get(key))
+		finalFile.write(str(key) + ":" + str(wordMap.get(key)))
 
 if __name__ == "__main__":
 	main()
